@@ -1,8 +1,10 @@
-.PHONY: all mycat run clean
+.PHONY: all mycat mygrep run clean
 all: run
-mycat: main.c
-	gcc main.c -o mycat
-run: mycat
-	./mycat
+mycat: mycat.c
+	gcc mycat.c -o mycat
+mygrep: mygrep.c
+	gcc mygrep.c -o mygrep
+run: mycat mygrep
+	./mycat ./mygrep
 clean:
-	rm -f mycat
+	rm -f mycat mygrep
