@@ -54,18 +54,18 @@ void print_long_format(file_info_t *files, int num_files, int show_hidden) {
     struct passwd *pw;
     struct group *gr;
     char time_str[100];
-    long long total_size = 0;
+    long long total_blocks = 0;
 
     // Вычисляем общий размер всех файлов и каталогов
     for (int i = 0; i < num_files; i++) {
         file_info_t *file = &files[i];
         if (!show_hidden && file->name[0] == '.')
             continue;
-        total_size += file->st.st_size;
+        total_blocks += file->st.st_blocks;
     }
 
     // Выводим общее число файлов и каталогов, а также общий размер
-    printf("total %lld\n", (total_size + 511) / 512);
+    printf("total %lld\n", total_blocks/2);
 
     // Перебираем все файлы и выводим их информацию в длинном формате
     for (int i = 0; i < num_files; i++) {
@@ -93,10 +93,14 @@ void print_long_format(file_info_t *files, int num_files, int show_hidden) {
         // Выводим имя владельца и группы
         pw = getpwuid(file->st.st_uid);
         gr = getgrgid(file->st.st_gid);
-        printf(" %-8s %-8s", (pw) ? pw->pw_name : "", (gr) ? gr->gr_name : "");
+        
+        if(pw && gr)
+            printf(" %-8s %-8s", (pw) ? pw->pw_name : "", (gr) ? gr->gr_name : "");
+        else
+            printf(" %8d %8d", file->st.st_uid, file->st.st_gid);
 
         // Выводим размер файла
-        printf(" %10lld", (long long)file->st.st_size);
+        printf(" %5lld", (long long)file->st.st_size);
 
         // Выводим время последнего изменения файла
         strftime(time_str, sizeof(time_str), "%b %d %H:%M", localtime(&file->st.st_mtime));
@@ -162,9 +166,11 @@ int main(int argc, char *argv[]) {
         file_info_t *file = (file_info_t *)malloc(sizeof(file_info_t));
         file->name = strdup(ent->d_name);
 
-        // Используйте fstatat() вместо stat()
-        if (fstatat(dirfd(dir), ent->d_name, &file->st, 0) == -1) {
-            fprintf(stderr, "Error: could not get file information for '%s'\n", ent->d_name);
+        char full_path[PATH_MAX];
+        sprintf(full_path, "%s/%s", dir_path, ent->d_name);
+
+        if (lstat(full_path, &file->st) == -1) {
+            perror("Error: could not get file information");
             free(file->name);
             free(file);
             continue;
