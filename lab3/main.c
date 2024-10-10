@@ -1,93 +1,79 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <signal.h>
 
-// Флаг, указывающий, что родительский процесс получил сигнал SIGINT
-volatile sig_atomic_t parent_received_sigint = 0;
-
-// Обработчик сигнала SIGINT
-void sigint_handler(int sig) {
-    printf("Received SIGINT signal. Terminating processes.\n");
-    parent_received_sigint = 1;
-    exit(1);
+// Обработчики для atexit
+void func() {
+    printf("I'm atexit 1 for process %d\n", getpid());
 }
 
-// Обработчик сигнала SIGTERM
-void sigterm_handler(int sig, siginfo_t *info, void *context) {
-    printf("Received SIGTERM signal from process %d. Terminating.\n", info->si_pid);
-    exit(1);
+void func2() {
+    printf("I'm atexit 2 for process %d\n", getpid());
 }
 
-// Функция, вызываемая при завершении процесса (для родительского процесса)
-void parent_exit_handler(void) {
-    printf("Parent process with PID %d has terminated.\n", getpid());
-    parent_received_sigint = 0; // Очистить флаг для следующего запуска
-}
-
-// Функция, вызываемая при завершении процесса (для дочернего процесса)
-void child_exit_handler(void) {
-    printf("Child process with PID %d has terminated.\n", getpid());
-}
-
-int main() {
-    printf("Parent process with PID %d starts execution.\n", getpid());
-
-    // Регистрируем обработчик для SIGINT
-    if (signal(SIGINT, sigint_handler) == SIG_ERR) {
-        printf("Error registering SIGINT handler.\n");
-        return 1;
-    }
-
-    // Регистрируем обработчик для SIGTERM
-    struct sigaction sa;
-    sa.sa_sigaction = sigterm_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_SIGINFO;
-    if (sigaction(SIGTERM, &sa, NULL) != 0) {
-        printf("Error registering SIGTERM handler.\n");
-        return 1;
-    }
-
-    pid_t child_pid = fork();
-
-    if (child_pid == -1) { // Произошла ошибка при вызове fork()
-        printf("Error creating child process.\n");
-        return 1;
-    } else if (child_pid == 0) { // Это дочерний процесс
-        // Регистрируем обработчик для дочернего процесса
-        if (atexit(child_exit_handler) != 0) {
-            printf("Error registering child exit handler.\n");
-            return 1;
-        }
-        printf("Child process with PID %d starts execution.\n", getpid());
-        // Здесь можно выполнить некоторые действия, специфичные для дочернего процесса
-        printf("Child process terminates.\n");
-        return 0;
-    } else { // Это родительский процесс
-        // Регистрируем обработчик для родительского процесса
-        if (atexit(parent_exit_handler) != 0) {
-            printf("Error registering parent exit handler.\n");
-            return 1;
-        }
-
-        printf("Parent process with PID %d waits for child process to finish.\n", getpid());
-        // Ожидаем завершения дочернего процесса
-        int status;
-        waitpid(child_pid, &status, 0);
-
-        printf("Child process with PID %d has finished.\n", child_pid);
-
-        // Если родительский процесс получил сигнал SIGINT, завершаем программу
-        if (parent_received_sigint) {
-            printf("Parent process terminating due to SIGINT.\n");
-            return 1;
-        }
-
-        return 0;
+// Обработчик сигналов
+void handler(int sig) {
+    switch(sig) {
+        case SIGTERM:
+            printf("Signal SIGTERM received, my pid is %d\n", getpid());
+            break;
+        case SIGINT:
+            printf("Signal SIGINT received, my pid is %d\n", getpid());
+            break;
+        default:
+            printf("Signal %d received, my pid is %d\n", sig, getpid());
+            break;
     }
 }
 
+int main(int argc, char** argv) {
 
+    (void)argc; (void)argv;
 
+    // Установка обработчиков сигналов
+    if (signal(SIGINT, handler) == SIG_ERR) {
+        perror("Error signal\n");
+    }
+
+    struct sigaction sigTermAction;
+    sigTermAction.sa_handler = handler;
+    sigTermAction.sa_flags = SA_SIGINFO;
+    if (sigaction(SIGTERM, &sigTermAction, NULL) == -1) {
+        perror("Error sigaction\n");
+    }
+
+    // Регистрация функций для вызова при завершении программы
+    if (atexit(func) != 0) {
+        perror("Atexit unsuccess\n");
+    }
+
+    pid_t res = 0;
+
+    switch (res = fork()) {
+        case -1: {
+            // Обработка ошибки fork()
+            int err = errno;
+            fprintf(stderr, "Fork error: %s (%d)\n", strerror(err), err);
+            break;
+        }
+        case 0: {
+            // В дочернем процессе
+            printf("[CHILD] I'm child of %d, my pid is %d\n", getppid(), getpid());
+            break; // Завершаем дочерний процесс
+        }
+        default: {
+            // В родительском процессе
+            int ch_res;
+            sleep(5);
+            wait(&ch_res); // Ожидание завершения дочернего процесса
+            printf("[PARENT] I'm parent of %d, my pid is %d, my parent pid is %d\n", res, getpid(), getppid());
+            printf("[PARENT] Child exit code %d\n", WEXITSTATUS(ch_res));
+            break;
+        }
+    }
+    return 0;
+}
