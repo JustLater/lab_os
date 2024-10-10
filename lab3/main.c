@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 
 // Флаг, указывающий, что родительский процесс получил сигнал SIGINT
@@ -22,12 +21,13 @@ void sigterm_handler(int sig, siginfo_t *info, void *context) {
 }
 
 // Функция, вызываемая при завершении процесса (для родительского процесса)
-void parent_exit_handler(int status, void *arg) {
+void parent_exit_handler(void) {
     printf("Parent process with PID %d has terminated.\n", getpid());
+    parent_received_sigint = 0; // Очистить флаг для следующего запуска
 }
 
 // Функция, вызываемая при завершении процесса (для дочернего процесса)
-void child_exit_handler(int status, void *arg) {
+void child_exit_handler(void) {
     printf("Child process with PID %d has terminated.\n", getpid());
 }
 
@@ -50,13 +50,6 @@ int main() {
         return 1;
     }
 
-    // Регистрируем обработчик для родительского процесса
-    if (atexit(parent_exit_handler) != 0) {
-        printf("Error registering parent exit handler.\n");
-        return 1;
-    }
-
-    // Вызываем fork() для создания дочернего процесса
     pid_t child_pid = fork();
 
     if (child_pid == -1) { // Произошла ошибка при вызове fork()
@@ -64,20 +57,26 @@ int main() {
         return 1;
     } else if (child_pid == 0) { // Это дочерний процесс
         // Регистрируем обработчик для дочернего процесса
-        if (on_exit(child_exit_handler, NULL) != 0) {
+        if (atexit(child_exit_handler) != 0) {
             printf("Error registering child exit handler.\n");
             return 1;
         }
-
         printf("Child process with PID %d starts execution.\n", getpid());
         // Здесь можно выполнить некоторые действия, специфичные для дочернего процесса
         printf("Child process terminates.\n");
         return 0;
     } else { // Это родительский процесс
+        // Регистрируем обработчик для родительского процесса
+        if (atexit(parent_exit_handler) != 0) {
+            printf("Error registering parent exit handler.\n");
+            return 1;
+        }
+
         printf("Parent process with PID %d waits for child process to finish.\n", getpid());
         // Ожидаем завершения дочернего процесса
         int status;
         waitpid(child_pid, &status, 0);
+
         printf("Child process with PID %d has finished.\n", child_pid);
 
         // Если родительский процесс получил сигнал SIGINT, завершаем программу
@@ -89,7 +88,6 @@ int main() {
         return 0;
     }
 }
-
 
 
 
