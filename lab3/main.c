@@ -6,13 +6,9 @@
 #include <stdlib.h>
 #include <signal.h>
 
-// Обработчики для atexit
+// Обработчик для atexit
 void func() {
     printf("I'm atexit 1 for process %d\n", getpid());
-}
-
-void func2() {
-    printf("I'm atexit 2 for process %d\n", getpid());
 }
 
 // Обработчик сигналов
