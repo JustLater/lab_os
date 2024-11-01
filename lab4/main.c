@@ -53,8 +53,17 @@ int change_permissions(const char* path, const char* mode) {
         const char *ptr = mode;
 
         while (*ptr) {
+            char operation;
+            if((*(ptr + 1)) != '+' || (*(ptr + 1)) != '-'){
+              operation = *ptr;
+            }
+            else {
+              operation = *ptr++;
+            }
             char who = *ptr++;
-            char operation = *ptr++;
+            if(who == '+' || who == '-') {
+                who = 'a';
+            }
 
             // Обработка разрешений
             while (*ptr && (*ptr == 'r' || *ptr == 'w' || *ptr == 'x')) {
@@ -65,16 +74,25 @@ int change_permissions(const char* path, const char* mode) {
                         if (*ptr == 'r') mask = S_IRUSR;
                         else if (*ptr == 'w') mask = S_IWUSR;
                         else if (*ptr == 'x') mask = S_IXUSR;
+                        //printf("%c\n", who);
                         break;
                     case 'g':
                         if (*ptr == 'r') mask = S_IRGRP;
                         else if (*ptr == 'w') mask = S_IWGRP;
                         else if (*ptr == 'x') mask = S_IXGRP;
+                        //printf("%c\n", who);
                         break;
                     case 'o':
                         if (*ptr == 'r') mask = S_IROTH;
                         else if (*ptr == 'w') mask = S_IWOTH;
                         else if (*ptr == 'x') mask = S_IXOTH;
+                        //printf("%c\n", who);
+                        break;
+                    case 'a':
+                        if (*ptr == 'r') mask |= S_IRUSR | S_IRGRP | S_IROTH;
+                        if (*ptr == 'w') mask |= S_IWUSR | S_IWGRP | S_IWOTH;
+                        if (*ptr == 'x') mask |= S_IXUSR | S_IXGRP | S_IXOTH;
+                        //printf("%c\n", who);
                         break;
                 }
 
