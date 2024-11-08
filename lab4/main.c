@@ -53,54 +53,47 @@ int change_permissions(const char* path, const char* mode) {
         const char *ptr = mode;
 
         while (*ptr) {
-            char operation;
-            if((*(ptr + 1)) != '+' || (*(ptr + 1)) != '-'){
-              operation = *ptr;
-            }
-            else {
-              operation = *ptr++;
-            }
             char who = *ptr++;
-            if(who == '+' || who == '-') {
+            char operation;
+
+            if (who == '+' || who == '-') { //упрощена обработка операций и кто
+                operation = who;
                 who = 'a';
+            } else {
+                operation = *ptr++;
             }
 
             // Обработка разрешений
+            mode_t mask = 0; // Маска для установки прав вынесена за цикл, чтобы не сбрасывать ее при каждой итерации
+            //и в цикле вместо = теперь |= (чтобы не сбрасывать права)
             while (*ptr && (*ptr == 'r' || *ptr == 'w' || *ptr == 'x')) {
-                mode_t mask = 0;
-
                 switch (who) {
                     case 'u':
-                        if (*ptr == 'r') mask = S_IRUSR;
-                        else if (*ptr == 'w') mask = S_IWUSR;
-                        else if (*ptr == 'x') mask = S_IXUSR;
-                        //printf("%c\n", who);
+                        if (*ptr == 'r') mask |= S_IRUSR;
+                        if (*ptr == 'w') mask |= S_IWUSR;
+                        if (*ptr == 'x') mask |= S_IXUSR;
                         break;
                     case 'g':
-                        if (*ptr == 'r') mask = S_IRGRP;
-                        else if (*ptr == 'w') mask = S_IWGRP;
-                        else if (*ptr == 'x') mask = S_IXGRP;
-                        //printf("%c\n", who);
+                        if (*ptr == 'r') mask |= S_IRGRP;
+                        if (*ptr == 'w') mask |= S_IWGRP;
+                        if (*ptr == 'x') mask |= S_IXGRP;
                         break;
                     case 'o':
-                        if (*ptr == 'r') mask = S_IROTH;
-                        else if (*ptr == 'w') mask = S_IWOTH;
-                        else if (*ptr == 'x') mask = S_IXOTH;
-                        //printf("%c\n", who);
+                        if (*ptr == 'r') mask |= S_IROTH;
+                        if (*ptr == 'w') mask |= S_IWOTH;
+                        if (*ptr == 'x') mask |= S_IXOTH;
                         break;
                     case 'a':
                         if (*ptr == 'r') mask |= S_IRUSR | S_IRGRP | S_IROTH;
                         if (*ptr == 'w') mask |= S_IWUSR | S_IWGRP | S_IWOTH;
                         if (*ptr == 'x') mask |= S_IXUSR | S_IXGRP | S_IXOTH;
-                        //printf("%c\n", who);
                         break;
                 }
-
-                if (operation == '+') new_mode |= mask;
-                else if (operation == '-') new_mode &= ~mask;
-
                 ptr++;
             }
+
+            if (operation == '+') new_mode |= mask;
+            else if (operation == '-') new_mode &= ~mask;
         }
     }
 
