@@ -26,7 +26,7 @@ int create_fifo(const char *fifoname) {
         perror("Error creating FIFO");
         return -1;
     }
-    return 0; // Успех
+    return 0;
 }
 
 // Проверка на существование
