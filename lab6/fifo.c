@@ -20,7 +20,6 @@ void get_current_time(char *time_str, size_t size) {
     strftime(time_str, size, "%a %b %d %T %Y", tm_info);
 }
 
-// Создание FIFO
 int create_fifo(const char *fifoname) {
     if (mkfifo(fifoname, 0600) == -1) { // Права доступа на чтение и запись только для влд
         perror("Error creating FIFO");
