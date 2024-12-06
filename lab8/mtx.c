@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define LIMIT 12
+#define LIMIT 10
 
 int array[200]; // Массив для записи
 int next_write = 0; // Индекс следующей записи
