@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
+//#include <signal.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <time.h>
@@ -21,11 +21,7 @@ void cleanup(int signum) {
 }
 
 int main() {
-    struct sigaction sa;
-    sa.sa_handler = cleanup;
-    sigaction(SIGINT, &sa, NULL);
 
-    // Проверка на существование разделяемой памяти
     shmid = shmget(SHM_KEY, BUFFER_SIZE, IPC_CREAT | IPC_EXCL | 0666);
     if (shmid < 0) {
         perror("Another sender is already running.");
