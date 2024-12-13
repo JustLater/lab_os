@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <sys/shm.h>
 
-#define SHM_KEY 1234
+#define SHM_KEY 1235
 #define BUFFER_SIZE 100
 
 int shmid;
