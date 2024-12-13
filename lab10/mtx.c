@@ -5,10 +5,10 @@
 
 #define LIMIT 10
 
-int array[1000]; // Массив для записи
-int next_write = 0; // Индекс следующей записи
-pthread_mutex_t mutex; // Мьютекс для синхронизации доступа к массиву
-pthread_cond_t cond;   // Условная переменная для уведомления читателей
+int array[1000];
+int next_write = 0;
+pthread_mutex_t mutex;
+pthread_cond_t cond;
 
 void* write_thread() {
     for (int i = 0; i < LIMIT; i++) {
