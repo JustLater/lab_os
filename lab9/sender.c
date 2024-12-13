@@ -8,8 +8,8 @@
 #include <sys/sem.h>
 #include <time.h>
 
-#define SHM_KEY 1234
-#define SEM_KEY 5678
+#define SHM_KEY 1235
+#define SEM_KEY 5677
 #define BUFFER_SIZE 100
 
 int shmid;
