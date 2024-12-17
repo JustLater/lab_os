@@ -5,13 +5,13 @@
 
 #define LIMIT 10
 
-int array[200]; // Массив для записи
-int next_write = 0; // Индекс следующей записи
-pthread_mutex_t mutex; // Мьютекс для синхронизации доступа к массиву
+int array[200];
+int next_write = 0;
+pthread_mutex_t mutex;
 
 void* write_thread() {
     for (int i = 0; i < LIMIT; i++) {
-        usleep(10000);
+        usleep(100000);
         pthread_mutex_lock(&mutex);
 
         array[next_write] = next_write;
@@ -25,17 +25,18 @@ void* write_thread() {
 
 void* read_thread() {
     for (int i = 0; i < LIMIT; i++) {
-        usleep(5000);
         pthread_mutex_lock(&mutex);
+        usleep(100);
 
         while (i >= next_write) {
             pthread_mutex_unlock(&mutex);
-            usleep(5000);
-            pthread_mutex_lock(&mutex);
+            usleep(50000);
+            //pthread_mutex_lock(&mutex);
         }
 
         printf("Read: array[%d] = %d tid: %lx\n", i, array[i], pthread_self());
         pthread_mutex_unlock(&mutex);
+        usleep(100);
     }
     return NULL;
 }
