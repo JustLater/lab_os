@@ -1,6 +1,6 @@
-.PHONY: all mtx clean
-all: mtx
-mtx: mtx.c
-	gcc -lpthread mtx.c -o mtx
+.PHONY: all rwlock clean
+all: rwlock
+rwlock: rwlock.c
+	gcc -lpthread rwlock.c -o rwlock
 clean:
-	rm -rf *.o mtx
+	rm -rf *.o rwlock
