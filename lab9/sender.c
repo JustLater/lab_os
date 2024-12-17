@@ -8,21 +8,27 @@
 #include <sys/sem.h>
 #include <time.h>
 
-#define SHM_KEY 1235
-#define SEM_KEY 5677
 #define BUFFER_SIZE 100
 
+const char *shm_name = "shared_memory";
 int shmid;
-char *shared_memory;
+char *shared_memory = NULL;
 int semid;
 
-void cleanup(int signum) {
-    if (shmid >= 0) {
-        shmctl(shmid, IPC_RMID, NULL);
+void handler(int sig) {
+    printf("[SIGNAL HANDLER] Signal %d received\n", sig);
+    if (shared_memory != NULL) {
+        if (shmdt(shared_memory) < 0) {
+            perror("shmdt");
+        }
     }
-    if (semid >= 0) {
-        semctl(semid, 0, IPC_RMID);
+    if (shmctl(shmid, IPC_RMID, NULL) < 0) {
+        perror("shmctl");
     }
+    if (semctl(semid, 0, IPC_RMID) == -1) {
+        perror("semctl");
+    }
+    unlink(shm_name);
     exit(0);
 }
 
@@ -37,17 +43,18 @@ void semaphore_signal(int semid) {
 }
 
 int main() {
-    struct sigaction sa;
-    sa.sa_handler = cleanup;
-    sigaction(SIGINT, &sa, NULL);
+    signal(SIGINT, handler);
+    signal(SIGTERM, handler);
 
-    shmid = shmget(SHM_KEY, BUFFER_SIZE, IPC_CREAT | IPC_EXCL | 0666);
+    key_t shm_key = ftok(shm_name, 'R');
+    shmid = shmget(shm_key, BUFFER_SIZE, IPC_CREAT | IPC_EXCL | 0666);
     if (shmid < 0) {
-        perror("Another sender is already running.");
+        perror("Another sender is already running or failed to create shared memory.");
         exit(1);
     }
 
-    semid = semget(SEM_KEY, 1, IPC_CREAT | IPC_EXCL | 0666);
+    key_t sem_key = ftok(shm_name, 'S');
+    semid = semget(sem_key, 1, IPC_CREAT | IPC_EXCL | 0666);
     if (semid < 0) {
         perror("Failed to create semaphore.");
         exit(1);
