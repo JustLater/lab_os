@@ -9,12 +9,12 @@
 
 int shmid;
 char *shared_memory;
-const char *filename = "ftok_file";
+const char *shm_name = "ftok_file";
 
 int main() {
 
     // Генерация ключа для разделяемой памяти
-    key_t key = ftok(filename, 'R');
+    key_t key = ftok(shm_name, 'R');
     if (key == -1) {
         perror("ftok");
         exit(1);
