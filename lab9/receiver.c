@@ -2,19 +2,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
 
-#define SHM_KEY 1235
-#define SEM_KEY 5677
 #define BUFFER_SIZE 100
 
+const char *shm_name = "shared_memory";
 int shmid;
-char *shared_memory;
+char *shared_memory = NULL;
 int semid;
 
-void cleanup(int signum) {
-    shmdt(shared_memory);
+void handler(int signal) {
+    printf("[SIGNAL HANDLER] Signal %d received\n", signal);
+    if (shared_memory != NULL) {
+        if (shmdt(shared_memory) < 0) {
+            perror("shmdt");
+        }
+    }
     exit(0);
 }
 
@@ -29,17 +34,18 @@ void semaphore_signal(int semid) {
 }
 
 int main() {
-    struct sigaction sa;
-    sa.sa_handler = cleanup;
-    sigaction(SIGINT, &sa, NULL);
+    signal(SIGINT, handler);
+    signal(SIGTERM, handler);
 
-    shmid = shmget(SHM_KEY, BUFFER_SIZE, 0666);
+    key_t shm_key = ftok(shm_name, 'R');
+    shmid = shmget(shm_key, BUFFER_SIZE, 0666);
     if (shmid < 0) {
         perror("shmget");
         exit(1);
     }
 
-    semid = semget(SEM_KEY, 1, 0666);
+    key_t sem_key = ftok(shm_name, 'S');
+    semid = semget(sem_key, 1, 0666);
     if (semid < 0) {
         perror("Failed to get semaphore.");
         exit(1);
