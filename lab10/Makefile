@@ -1,6 +1,6 @@
-.PHONY: all mtx clean
-all: mtx
-mtx: mtx.c
-	gcc -lpthread mtx.c -o mtx
+.PHONY: all cond clean
+all: cond
+cond: cond.c
+	gcc -lpthread cond.c -o cond
 clean:
-	rm -rf *.o mtx
+	rm -rf *.o cond
