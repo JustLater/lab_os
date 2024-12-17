@@ -1,26 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
+//#include <signal.h>
+#include <sys/ipc.h>
 #include <sys/shm.h>
 
-#define SHM_KEY 1235
 #define BUFFER_SIZE 100
 
 int shmid;
 char *shared_memory;
-
-void cleanup(int signum) {
-    shmdt(shared_memory);
-    exit(0);
-}
+const char *filename = "ftok_file";
 
 int main() {
-    struct sigaction sa;
-    sa.sa_handler = cleanup;
-    sigaction(SIGINT, &sa, NULL);
 
-    shmid = shmget(SHM_KEY, BUFFER_SIZE, 0666);
+    // Генерация ключа для разделяемой памяти
+    key_t key = ftok(filename, 'R');
+    if (key == -1) {
+        perror("ftok");
+        exit(1);
+    }
+
+    shmid = shmget(key, BUFFER_SIZE, 0666);
     if (shmid < 0) {
         perror("shmget");
         exit(1);
@@ -36,7 +36,5 @@ int main() {
         printf("Receiver PID: %d | Received: %s", getpid(), shared_memory);
         sleep(1);
     }
-
     return 0;
 }
-
