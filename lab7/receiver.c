@@ -11,8 +11,20 @@ int shmid;
 char *shared_memory;
 const char *shm_name = "ftok_file";
 
+void clean_up(int arg){
+	if(shared_memory != NULL){
+		if(shmdt(shared_memory) < 0){
+			perror("shmdt");
+		}
+	}
+	printf("Shmem detached");
+	exit(0);
+}
+
 int main() {
 
+    signal(SIGINT, clean_up);
+    
     // Генерация ключа для разделяемой памяти
     key_t key = ftok(shm_name, 'R');
     if (key == -1) {
