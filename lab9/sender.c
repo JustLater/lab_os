@@ -15,7 +15,7 @@ int shmid;
 char *shared_memory = NULL;
 int semid;
 
-void handler(int sig) {
+void cleanup(int sig) {
     printf("[SIGNAL HANDLER] Signal %d received\n", sig);
     if (shared_memory != NULL) {
         if (shmdt(shared_memory) < 0) {
@@ -43,8 +43,8 @@ void semaphore_signal(int semid) {
 }
 
 int main() {
-    signal(SIGINT, handler);
-    signal(SIGTERM, handler);
+    signal(SIGINT, cleanup);
+    signal(SIGTERM, cleanup);
 
     key_t shm_key = ftok(shm_name, 'R');
     shmid = shmget(shm_key, BUFFER_SIZE, IPC_CREAT | IPC_EXCL | 0666);
