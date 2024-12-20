@@ -14,7 +14,7 @@ int shmid;
 char *shared_memory = NULL;
 const char *shm_name = "ftok_file";
 
-void handler(int sig) {
+void cleanup(int sig) {
     printf("[SIGNAL HANDLER] Signal %d received\n", sig);
 
     if (shared_memory != NULL && shmdt(shared_memory) < 0) {
@@ -59,7 +59,7 @@ int main() {
         exit(1);
     }
 
-    if (signal(SIGINT, handler) == SIG_ERR || signal(SIGTERM, handler) == SIG_ERR) {
+    if (signal(SIGINT, cleanup) == SIG_ERR || signal(SIGTERM, cleanup) == SIG_ERR) {
         perror("Error in signal");
         return 1;
     }
